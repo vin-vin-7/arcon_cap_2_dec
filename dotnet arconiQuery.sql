@@ -121,8 +121,9 @@ CREATE TABLE technology_types( -- information like, inverter, humidifier etc...
 
 
 insert into form_factors(form_Factor, form_Factor_Description) Values 
-('Wall-mounted', 'Mounted high on a wall, usually split type.'),
-('Ceiling cassette', 'Installed in ceiling; commonly distributes air in 4 directions.'),
+('Wall-mounted Non-Inverter', 'Mounted high on a wall, usually split type.'),
+('Ceiling Suspended', 'Installed in ceiling; commonly distributes air in 4 directions.'),
+('Ceiling Cassette-Type', 'Installed in ceiling; commonly distributes air in 4 directions.'),
 ('Floor-standing / Tower','Tall vertical units; often commercial spaces.'),
 ('Window type', 'All-in-one, fits inside a window.'),
 ('Portable / Tower', 'Small, on wheels, easy to move.')
@@ -827,6 +828,7 @@ CREATE TABLE customer_transactions (
 );
 
 
+
 -- i need the delivery computation to proceed (UPDATED: Products (added gross weight) and coordinates for (arcon address and customer address)
 -- will use lalamove quotation API
 
@@ -834,7 +836,7 @@ CREATE TABLE customer_transactions (
 CREATE TABLE orders (
     ID INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     customer_transaction_id INT NOT NULL REFERENCES customer_transactions(id) ON DELETE CASCADE,
-
+	order_ref_code VARCHAR(255) UNIQUE NOT NULL
     created_at TIMESTAMPTZ DEFAULT NOW(),
     status VARCHAR(30) DEFAULT 'TO PACK' -- TO PACK, TO SHIP, IN TRANSIT, CANCELLED, COMPLETED
 );
@@ -859,4 +861,118 @@ CREATE TABLE order_items (
 
 
 -----------------------------------------------------------------------------end customer checkout process-----------------------------------------------
-		alter table cart_items drop column unit_price
+		alter table products add column form_factor_id REFERENCES form_factors(ID)
+		select * from products
+		select * from form_factors
+
+-----------------------------------------------------------------------------services booking ------------------------------------------------------
+
+-- This identifies the type of aircon.
+CREATE TABLE select * from service_aircon_type(
+	ID INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	name VARCHAR(100) UNIQUE NOT NULL
+);
+
+-- Groups of services
+CREATE TABLE select * from service_categories (
+	ID INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY, -- cleaning, freon charging, repair etc...
+	service_name VARCHAR(255) NOT NULL,
+	description TEXT
+);
+
+-- Each aircon type + service category combination.
+CREATE TABLE services(
+	ID int GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	service_aircon_type_id INT NOT NULL REFERENCES service_aircon_type(ID) ON DELETE CASCADE,
+	service_categories_id INT NOT NULL REFERENCES service_categories(ID) ON DELETE CASCADE,
+	UNIQUE (service_aircon_type_id, service_categories_id) 
+);
+
+-- A service can have multiple price tiers by HP range.
+CREATE TABLE service_price_tiers(
+	ID INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	services_id INT NOT NULL REFERENCES services(ID) ON DELETE CASCADE,
+	capacity_range VARCHAR(50) NOT NULL,
+	price NUMERIC(12,2) NOT NULL,
+	sort_order INT DEFAULT 1 
+);
+
+-- 	booking must expire (time) and must push through
+-- 	BOOKINGS TABLE (like “orders”)
+CREATE TABLE service_bookings(
+	ID INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	booking_ref_code VARCHAR(255) UNIQUE, 									-- BOOKING reference code
+	customer_id INT NOT NULL REFERENCES customers(ID),
+	status VARCHAR(50) DEFAULT 'Pending',
+	customer_addresses_id INT NOT NULL REFERENCES customer_addresses(ID),
+	schedule_date TIMESTAMP NOT NULL,
+	customer_note TEXT,
+	
+	-- payment
+	payment_method VARCHAR(50) NOT NULL DEFAULT 'AFTER SERVICE', 	-- paymongo | after_service
+	payment_status VARCHAR(50) NOT NULL DEFAULT 'PENDING',			-- pending | paid | failed | cancelled
+	payment_reference VARCHAR(255),									-- paymongo payment id
+	paid_At TIMESTAMP,
+
+	total_amount NUMERIC(12,2),										-- sum of booking items
+	created_at TIMESTAMP DEFAULT NOW()
+);
+-- 	Booking Items Table
+CREATE TABLE service_booking_items(
+	ID INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	service_bookings_id INT NOT NULL REFERENCES service_bookings(ID) ON DELETE CASCADE,
+	services_id INT NOT NULL REFERENCES services(ID),
+	quantity INT NOT NULL DEFAULT 1,
+
+	-- price snapshot
+	capacity_range VARCHAR(50),
+	price NUMERIC(12,2) NOT NULL,
+	total_amount NUMERIC(12, 2) GENERATED ALWAYS AS (quantity * price) STORED 
+);
+-- Example: Window Type Non-Inverter + Standard Cleaning
+INSERT INTO services (service_aircon_type_id, service_categories_id) VALUES
+(1, 1),
+(1, 2),
+(2, 1),
+(3, 2);
+
+-- Window Type Non-Inverter + Standard Cleaning
+INSERT INTO service_price_tiers (services_id, capacity_range, price, sort_order) VALUES
+(1, '0.5 - 1.0 HP', 600, 1),
+(1, '1.5 - 2.5 HP', 700, 2);
+
+-- Pulldown Deep Cleaning
+INSERT INTO service_price_tiers (services_id, capacity_range, price, sort_order) VALUES
+(2, '0.5 - 1.0 HP', 800, 1),
+(2, '1.5 - 2.5 HP', 1000, 2);
+
+
+----------------------------------------------------------------------------------- end services booking ----------------------------------------------
+ 
+SELECT 
+    sat.name AS aircon_type,
+    sc.service_name,
+    s.id AS service_id,
+    spt.capacity_range,
+    spt.price
+FROM service_aircon_type sat
+JOIN services s 
+    ON sat.id = s.service_aircon_type_id
+JOIN service_categories sc
+    ON sc.id = s.service_categories_id
+JOIN service_price_tiers spt
+    ON spt.services_id = s.id
+
+
+
+
+
+
+
+
+
+
+
+
+
+
