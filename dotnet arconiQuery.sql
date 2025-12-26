@@ -1,8 +1,7 @@
 create database airconi_trading_db
 
 
-	-- This will tell the user status, both for admin user's and customers
-CREATE TYPE user_status AS ENUM ('ACTIVE', 'SUSPENDED', 'ARCHIVED');
+
 
 	-- 3. Roles table
 CREATE TABLE roles (
@@ -26,13 +25,16 @@ CREATE TABLE admin_users (
     created_By INT REFERENCES admin_users(ID) ON DELETE SET NULL,
     updated_At TIMESTAMPTZ,
     updated_By INT REFERENCES admin_users(ID) ON DELETE SET NULL,
-    status user_status DEFAULT 'ACTIVE',
+    status varchar(50) DEFAULT 'ACTIVE',
     is_Online BOOLEAN DEFAULT FALSE, 
     login_Attempts INT DEFAULT 0,
     last_failed_login TIMESTAMPTZ,
     last_Login TIMESTAMPTZ
 	admin_user_avatar_media_id INT REFERENCES media_url(id) ON DELETE SET NULL;
 );
+
+ALTER TABLE admin_users
+  ALTER COLUMN status SET DEFAULT 'ACTIVE';
 
 	-- User roles junction table (for many-to-many)
 CREATE TABLE user_roles (
@@ -56,11 +58,9 @@ CREATE TABLE work_schedule (
 );
 
 
-CREATE TYPE product_Status AS ENUM ('ACTIVE', 'DISCONTINUED', 'DRAFT')
-CREATE TYPE discount_Type AS ENUM ('NONE','PERCENTAGE', 'AMOUNT') --TYPE OF DISCOUNT % or actual amount
 
 -- product table: products should be added through stages to prevent foreign key constraints. 
-CREATE TABLE products(
+CREATE TABLE select * from products(
 	ID INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 	manufacturer_ID INT REFERENCES manufacturer(ID) NOT NULL,
 	product_Model VARCHAR(100) UNIQUE NOT NULL,
@@ -68,24 +68,31 @@ CREATE TABLE products(
 	sku VARCHAR(100) NOT NULL UNIQUE,
 	part_Number_A VARCHAR(100) NOT NULL UNIQUE,
 	part_Number_B VARCHAR(100),
-	form_factor_ID INT REFERENCES form_factors(ID),
-	status product_Status DEFAULT 'ACTIVE' NOT NULL, -- 'ACTIVE' 'DISCONTINUED' 'DRAFT'
+	form_factor_ID INT REFERENCES form_factors(ID), -- (Drop Down)
+	status  varchar(50) DEFAULT 'ACTIVE', -- options (Drop Down):  DISCONTINUED, ARCHIVED
 	original_selling_Price NUMERIC(12,2) NOT NULL,
 	discounted_selling_price NUMERIC(12,2),
-	discount_Type discount_Type NOT NULL DEFAULT 'NONE',
+	discount_Type Varchar(50), -- options (Drop Down):  NONE, PERCENTAGE, AMOUNT
 	discount_Value NUMERIC(10,2	),
 	isDiscounted BOOLEAN DEFAULT FALSE,
 	has_installation_service BOOLEAN DEFAULT FALSE;
 	actual_selling_price NUMERIC(12,2),
 	ar_Url VARCHAR(255),
-	
 	created_At TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     created_By INT REFERENCES admin_users(ID) ON DELETE SET NULL,
     updated_At TIMESTAMPTZ,
     updated_By INT REFERENCES admin_users(ID) ON DELETE SET NULL
+	manufacturer_warranty_years int,
+	outright_replacement_days int,
+	gross_weight_a numeric(6,2),
+	gross_weight_b numeric(6,2),
+	total_gross_weight numeric(6,2),
+	
 );
 
 
+
+-- (drop down) 
 CREATE TABLE manufacturer(
 	ID INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 	manufacturer_Name VARCHAR(100) NOT NULL UNIQUE,
@@ -97,8 +104,8 @@ CREATE TABLE manufacturer(
 	updated_At TIMESTAMPTZ,
     updated_By INT REFERENCES admin_users(ID) ON DELETE SET NULL
 );
--- 
-CREATE TABLE form_factors(
+-- (Drop Down)
+CREATE TABLE  form_factors(
 	ID INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 	form_Factor VARCHAR(50) NOT NULL UNIQUE,
 	form_Factor_Description TEXT,
@@ -118,10 +125,8 @@ CREATE TABLE technology_types( -- information like, inverter, humidifier etc...
     updated_By INT REFERENCES admin_users(ID)
 )
 
-
-
 insert into form_factors(form_Factor, form_Factor_Description) Values 
-('Wall-mounted Non-Inverter', 'Mounted high on a wall, usually split type.'),
+('Wall-mounted Non-Inverter', 'Mounted high on a wall, usually split type.'), 
 ('Ceiling Suspended', 'Installed in ceiling; commonly distributes air in 4 directions.'),
 ('Ceiling Cassette-Type', 'Installed in ceiling; commonly distributes air in 4 directions.'),
 ('Floor-standing / Tower','Tall vertical units; often commercial spaces.'),
@@ -149,12 +154,12 @@ CREATE TABLE product_technologies (
     UNIQUE (product_id, technology_id)
 );
 
-CREATE TABLE specification_keys (
+CREATE TABLE  specification_keys (
     ID  INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    KeyName VARCHAR(50) UNIQUE NOT NULL  -- e.g., "Power", "Warranty", "Dimensions"
+    KeyName VARCHAR(50) UNIQUE NOT NULL  -- e.g., "Horsepower", "Warranty", "Dimensions"
 );
 
-CREATE TABLE technical_specifications ( -- records the values of product spec: eg length = 34cm, Horsepower = 1.5
+CREATE TABLE  select * from technical_specifications ( -- records the values of product spec: eg length = 34cm, Horsepower = 1.5
     ID SERIAL PRIMARY KEY,
     Product_ID INT NOT NULL REFERENCES products(ID) ON DELETE CASCADE,
     Key_ID INT NOT NULL REFERENCES specification_keys(ID) ON DELETE CASCADE,
@@ -170,6 +175,7 @@ CREATE TABLE wishlists (
     UNIQUE(customer_id, product_id)
 );
 
+insert in
 
 insert into specification_keys (keyName) values ('Cooling capacity'),('Length(cm)'),('Width(cm)'),('Height(cm'),('Gross Weight(Kg)'), ('Net Weight')
 insert into technical_specifications (Product_ID, Key_ID, Value) VALUES (1,1,'1 HP'), (1,2,'Indoor: 21.1 | Outdoor: 24.2'), (1,3,'Indoor: 82 | Outdoor: 66'),
@@ -180,7 +186,7 @@ INSERT INTO product_technologies (product_ID, technology_ID) values (1,1), (1,7)
 
 select * from technical_specifications
 
-INSERT INTO products (
+INSERT INTO products(
     manufacturer_ID,
     product_Model,
     product_Series,
@@ -189,37 +195,42 @@ INSERT INTO products (
     part_Number_B,
     form_factor_ID,
     status,
-    original_selling_Price,
+    original_selling_price,
     discounted_selling_price,
-    discount_Type,
-    discount_Value,
+    discount_type,
+    discount_value,
     isDiscounted,
     actual_selling_price,
-    ar_Url,
-    created_By,
-    updated_At,
-    updated_By
+    ar_url,
+    created_by,
+    updated_at,
+    updated_by
 ) VALUES (
-    1,                          	-- manufacturer_ID
-    'AR09TYHYEWKNT',                -- product_Model
-    'Basic Windfree Series',        -- product_Series
-    'SKU-00001',               		-- sku
-    'AR09TYHYEWKNT',              	-- part_Number_A
-    'AR24TYGCGWKXTC',              	-- part_Number_B
-    1,                          	-- form_factor_ID
-	1,								-- technical_specifications,
-    'ACTIVE',                   	-- status (product_Status enum)
-    29995,                   		-- original_selling_Price
-    22500.00,                   	-- discounted_selling_price
-    'NONE',               			-- discount_Type (discount_Type enum)
-    10.00,                      	-- discount_Value (10%)
-    FALSE,                       	-- isDiscounted
-    22500.00,                   	-- actual_selling_price
-    'https://example.com/ar/ac-1000', -- ar_Url
-    1,                          	-- created_By (admin user ID)
-    CURRENT_TIMESTAMP,          	-- updated_At
-    1                           	-- updated_By
+    1,
+    'AR09TYHYHJJ',
+    'Basic Windfree Series',
+    'SKU-00002',
+    'AR09TYHYHJJ',
+    'AR24TYGCGWKXTC',
+    6,
+    'ACTIVE',
+    29995.00,
+    NULL,              -- no discounted price
+    'NONE',
+    0.00,
+    FALSE,
+    29995.00,          -- same as original
+    'https://example.com/ar/ac-1000',
+    1,
+    CURRENT_TIMESTAMP,
+    1
 );
+
+
+
+select * from customers
+
+
 
 
 -- customer table
@@ -240,7 +251,6 @@ CREATE TABLE customers(
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ,
 	is_Online BOOLEAN DEFAULT FALSE,
-	status user_status DEFAULT 'ACTIVE',
 	last_failed_login TIMESTAMPTZ,
     last_Login TIMESTAMPTZ
 );
@@ -913,7 +923,7 @@ CREATE TABLE service_bookings(
 	payment_status VARCHAR(50) NOT NULL DEFAULT 'PENDING',			-- pending | paid | failed | cancelled
 	payment_reference VARCHAR(255),									-- paymongo payment id
 	paid_At TIMESTAMP,
-
+	approx_completion_date TIMESTAMP,
 	total_amount NUMERIC(12,2),										-- sum of booking items
 	created_at TIMESTAMP DEFAULT NOW()
 );
@@ -946,6 +956,18 @@ INSERT INTO service_price_tiers (services_id, capacity_range, price, sort_order)
 (2, '0.5 - 1.0 HP', 800, 1),
 (2, '1.5 - 2.5 HP', 1000, 2);
 
+/*
+	1 booking → many employees
+	1 employee → many bookings
+	Calendar becomes employee-based*/
+
+CREATE TABLE service_booking_technicians (
+    id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    booking_id INT NOT NULL REFERENCES service_bookings(id) ON DELETE CASCADE,
+    admin_users_id INT NOT NULL REFERENCES admin_users(id),
+    assigned_at TIMESTAMP DEFAULT NOW(),
+    UNIQUE (booking_id, admin_users_id)
+);
 
 ----------------------------------------------------------------------------------- end services booking ----------------------------------------------
  
