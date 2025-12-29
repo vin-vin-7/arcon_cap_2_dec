@@ -1,8 +1,5 @@
 create database airconi_trading_db
 
-
-
-
 	-- 3. Roles table
 CREATE TABLE roles (
     ID INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -10,8 +7,10 @@ CREATE TABLE roles (
     role_Description TEXT
 );
 
+insert * into roles (role_Name, role_Description) 
+
 	--  Admin Users table
-CREATE TABLE admin_users (
+CREATE TABLE select * from admin_users (
     ID INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     user_Name VARCHAR(25) UNIQUE NOT NULL,
     first_Name VARCHAR(50) NOT NULL,
@@ -25,7 +24,7 @@ CREATE TABLE admin_users (
     created_By INT REFERENCES admin_users(ID) ON DELETE SET NULL,
     updated_At TIMESTAMPTZ,
     updated_By INT REFERENCES admin_users(ID) ON DELETE SET NULL,
-    status varchar(50) DEFAULT 'ACTIVE',
+    status varchar(50) DEFAULT 'ACTIVE', -- ACTIVE, ARCHIVED, SUSPEND
     is_Online BOOLEAN DEFAULT FALSE, 
     login_Attempts INT DEFAULT 0,
     last_failed_login TIMESTAMPTZ,
@@ -37,14 +36,14 @@ ALTER TABLE admin_users
   ALTER COLUMN status SET DEFAULT 'ACTIVE';
 
 	-- User roles junction table (for many-to-many)
-CREATE TABLE user_roles (
+CREATE TABLE select * from user_roles (
     user_id INT REFERENCES admin_users(ID) ON DELETE CASCADE,
     role_id INT REFERENCES roles(ID) ON DELETE CASCADE,
     PRIMARY KEY (user_id, role_id)
 );
 
 	-- Work schedule table
-CREATE TABLE work_schedule (
+CREATE TABLE select * from work_schedule (
     ID INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     employee_ID INT NOT NULL REFERENCES admin_users(ID) ON DELETE CASCADE, 
     day_of_Week VARCHAR(10) NOT NULL,
@@ -154,7 +153,7 @@ CREATE TABLE product_technologies (
     UNIQUE (product_id, technology_id)
 );
 
-CREATE TABLE  specification_keys (
+CREATE TABLE  select  from specification_keys where id = (
     ID  INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     KeyName VARCHAR(50) UNIQUE NOT NULL  -- e.g., "Horsepower", "Warranty", "Dimensions"
 );
