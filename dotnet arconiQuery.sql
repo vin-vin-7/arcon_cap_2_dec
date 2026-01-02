@@ -9,6 +9,8 @@ CREATE TABLE roles (
 
 insert * into roles (role_Name, role_Description) 
 
+delete from admin_users where id = 12
+
 	--  Admin Users table
 CREATE TABLE select * from admin_users (
     ID INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -32,6 +34,8 @@ CREATE TABLE select * from admin_users (
 	admin_user_avatar_media_id INT REFERENCES media_url(id) ON DELETE SET NULL;
 );
 
+delete from admin_users wh
+
 ALTER TABLE admin_users
   ALTER COLUMN status SET DEFAULT 'ACTIVE';
 
@@ -43,7 +47,7 @@ CREATE TABLE select * from user_roles (
 );
 
 	-- Work schedule table
-CREATE TABLE select * from work_schedule (
+CREATE TABLE  work_schedule (
     ID INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     employee_ID INT NOT NULL REFERENCES admin_users(ID) ON DELETE CASCADE, 
     day_of_Week VARCHAR(10) NOT NULL,
@@ -435,7 +439,7 @@ CREATE TABLE tags(
 );
 
 -- junction table of products and tags
-CREATE TABLE product_tags(
+CREATE TABLE select * fproduct_tags(
 	ID INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 	product_id INT NOT NULL REFERENCES products(ID) ON DELETE CASCADE,
 	tag_id INT NOT NULL REFERENCES tags(ID) ON DELETE CASCADE
